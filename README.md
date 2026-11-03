@@ -55,11 +55,29 @@ the file is never uploaded anywhere.
 | **Low** | A common name shared by several people, or a slightly different name (e.g. a missing middle name). Check carefully. |
 | **Already at UCPH when they signed up** | The contact gave a UCPH email address (staff or student) when joining our database, so they were already at UCPH. |
 
-In the Excel file, the first columns show **the name in our database and the name at UCPH
-side by side**. **Click either name to search for that person on the web.** The
-`ucph_research_profile` column links to their UCPH page, and `db_row` tells you which row
-of your contacts file they're on. **The same name doesn't always mean the same person,
-so check before acting on a match.**
+The Excel file shows **UCPH staff (blue) and our CRM (green) side by side**. Click a name
+to search for that person on the web, or *Open profile* for their UCPH page. When the CRM
+says the contact's university is UCPH or another Danish university, *Match type* says so:
+those people were probably already in Denmark.
+
+### Letting Claude assess the matches
+
+Whether two records really are the same person, and whether they **moved to Denmark from
+abroad**, takes some research. Claude can do it for you:
+
+1. After the comparison, the website shows a **Next: let Claude assess the matches** box.
+2. Click **Open Claude**, start a new chat and **attach the Excel file** you downloaded.
+3. Click **Copy prompt**, paste it into the chat and send it.
+4. Claude fills in the **Claude flag** and **Claude note** columns and gives you the file
+   back. Download it.
+5. Fill in **Your verdict**, which has a dropdown: **YES** = same person, moved to Denmark
+   from abroad; **MID** = same person, already in Denmark; **NO** = different person. Add
+   any notes under **Your comments**.
+
+The same instructions are inside the Excel file, on the *Instructions for Claude* sheet.
+Use a Claude plan that allows file uploads and web search.
+
+**The same name doesn't always mean the same person, so check before acting on a match.**
 
 ---
 

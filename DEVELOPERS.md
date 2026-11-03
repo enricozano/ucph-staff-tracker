@@ -154,8 +154,41 @@ the copy in `site/py/`, and the browser tests run it for real.
 `compare()` is the shared core. The CLI calls `run()`; the website's `worker.js` calls
 `compare()` through a small Python glue function and returns the Excel bytes to the page.
 
-Reference result (HubSpot export of 16,885 leads vs the 2026-10-23 snapshot): 41 pairs
-(12 High, 9 Medium, 20 Low) and 3 already at UCPH. It takes ~9 s in CPython and ~15–20 s
+### The match Excel (`write_match_sheet`)
+
+The layout follows the team's template ("Potential matches – universities vs CRM",
+sheet *UCPH vs CRM*). Row 1 has group bands (blue UCPH, green CRM, grey match assessment,
+yellow your review), row 2 the column headers; the sheet is frozen at D3 and filtered.
+Columns come from `match_columns()`:
+
+- UCPH: name, category, title, department, faculty, *Open profile* link; plus *Before at
+  UCPH* / *First seen* when matching against new staff (a `diff` result).
+- CRM: record ID (or *Row in file*), name, email, then **only the columns the contacts file
+  has**: phone, university/company, position, field, city/country, date added. Column
+  roles are guessed from `COLUMN_GUESSES`; HubSpot's ScienceHub export maps
+  *SHD Associated University* → university/company, *SHD Academic Position* → position,
+  *SHD Job Category* → field.
+- Match assessment: confidence (coloured), match type + evidence (e.g. "CRM university =
+  UCPH", "CRM university in Denmark"), surname frequency, candidate count, then the empty
+  **Claude flag** / **Claude note**.
+- Your review: **Your verdict** (dropdown YES / MID / NO / Unsure, free text allowed) and
+  comments. Conditional formatting colours flags and verdicts as they're typed.
+
+Names on both sides link to a web search (`search_url`). The sheet *Already at UCPH at
+signup* uses the same layout.
+
+### Claude's assessment (`CLAUDE_PROMPT`)
+
+"Same person?" and "moved to Denmark from abroad?" need web research and judgement, and a
+static site can't call the Claude API (it would expose an API key). So users upload the
+Excel to a Claude chat with `CLAUDE_PROMPT`. The prompt is shown on the site with a Copy
+button, and written into the file's *Instructions for Claude* sheet. If you change the
+flag vocabulary in the prompt, update `FLAG_COLOURS` too.
+
+Reference results against the 2026-10-23 snapshot: HubSpot export of 2026-10-19 (16,885
+leads): 41 pairs (12 High, 9 Medium, 20 Low), 3 already at UCPH. ScienceHub export of
+2026-11-03 (17,389 leads, with *SHD Associated University*): 41 pairs (13 High, 9 Medium,
+19 Low), 3 already at UCPH. It takes ~9 s in CPython and ~15–20 s
 in the browser (including loading Pyodide the first time).
 
 ## The website (`site/`)

@@ -135,12 +135,32 @@
           <div class="stat low"><span class="stat-num" id="r-low">0</span><span class="stat-label">Low</span></div>
           <div class="stat neutral"><span class="stat-num" id="r-already">0</span><span class="stat-label">already at UCPH when they signed up</span></div>
         </div>
-        <p class="muted small">Click a name to search for that person on the web. The same name doesn't always mean the same person, so check before acting on a match.</p>
+        <p class="muted small">Click a name to search for that person on the web. The same name doesn't always mean the same person: the next step lets Claude check each match.</p>
         <div class="subtabs" role="tablist">
           <button class="subtab" data-view="candidates" aria-selected="true">Possible new hires</button>
           <button class="subtab" data-view="already" aria-selected="false">Already at UCPH at signup</button>
         </div>
         <div class="table-wrap"><table id="results-table"></table></div>
+      </div>
+
+      <div class="card" id="claude" hidden>
+        <div class="card-head">
+          <div>
+            <h2>Next: let Claude assess the matches</h2>
+            <p class="muted">Claude checks each match (same person? moved to Denmark from abroad?) and fills in the <em>Claude flag</em> and <em>Claude note</em> columns of the Excel file.</p>
+          </div>
+        </div>
+        <ol class="steps">
+          <li><strong>Download the Excel file</strong> above, if you haven't yet.</li>
+          <li><strong>Open Claude</strong> in a new tab and <strong>attach the Excel file</strong> to a new chat.
+            <a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude</a></li>
+          <li><strong>Copy the prompt below</strong>, paste it into the chat and send it.
+            <button class="btn primary" id="copy-prompt" type="button">Copy prompt</button>
+            <span class="copied" id="copied" role="status"></span></li>
+          <li>Download the completed file Claude gives you, then fill in <em>Your verdict</em> (YES / MID / NO) and <em>Your comments</em>.</li>
+        </ol>
+        <textarea id="prompt" class="prompt" readonly rows="9" aria-label="Prompt for Claude"></textarea>
+        <p class="muted small">The same instructions are inside the Excel file, on the <em>Instructions for Claude</em> sheet. Use a Claude plan that allows file uploads and web search for the best results.</p>
       </div>
     </section>
 
@@ -163,9 +183,12 @@
           <li><span class="pill High">High</span> the same full name, and an unusual one: very likely the same person.</li>
           <li><span class="pill Medium">Medium</span> the same name, but a fairly common one: probably right, check it.</li>
           <li><span class="pill Low">Low</span> a common name shared by several people, or a slightly different name (e.g. a missing middle name): check carefully.</li>
-          <li><strong>Already at UCPH at signup</strong>: the contact used a UCPH email address (staff or student) in our database, so they were at UCPH before.</li>
+          <li><strong>Already at UCPH at signup</strong>: the contact used a UCPH email address (staff or student) in our CRM, so they were at UCPH before.</li>
         </ul>
-        <p>In the Excel file the two names are side by side, and clicking either one searches for that person on the web. The <em>method</em> sheet explains every rule.</p>
+        <p>In the Excel file the UCPH staff (blue) and our CRM (green) sit side by side; clicking a name searches for that person on the web. <em>Match type</em> says when the CRM university is UCPH or another Danish university: those people were probably already in Denmark.</p>
+
+        <h3>Letting Claude assess the matches</h3>
+        <p>Whether two records really are the same person, and whether they moved to Denmark from abroad, takes some research. After a comparison, the site shows a ready-made prompt: open <a href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a>, attach the Excel file, paste the prompt, and Claude fills in the <em>Claude flag</em> and <em>Claude note</em> columns and gives you the file back. Then fill in <em>Your verdict</em>: <strong>YES</strong> = same person, moved to Denmark from abroad; <strong>MID</strong> = same person, already in Denmark; <strong>NO</strong> = different person.</p>
 
         <h3>Who counts as academic staff</h3>
         <p>Professors (incl. clinical and associate/assistant professors), postdocs, PhD students, researchers, research assistants and lecturers. Guests, visiting researchers, emeriti and teaching assistants are included only when you tick the box.</p>

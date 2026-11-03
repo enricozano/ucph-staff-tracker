@@ -113,7 +113,7 @@ def test_compare_names(a, b, expected):
     assert matching.compare_names(a.split(), b.split()) == expected
 
 
-def test_match_end_to_end(tmp_path):
+def run_match(tmp_path, contacts_df):
     write_snapshot(tmp_path, "2026-01-01", [
         snapshot_row("1", "Giulia", "Zampirolo", "Postdoc", "gz@sund.ku.dk"),
         snapshot_row("2", "Rune Munck", "Aabenhus", "Associate Professor", "runa@sund.ku.dk"),
@@ -122,39 +122,94 @@ def test_match_end_to_end(tmp_path):
         snapshot_row("5", "Katarina", "Dragicevic", "Postdoc", "kd@bric.ku.dk"),
     ])
     ku_csv, _ = staff.export(tmp_path, xlsx=False)
-    contacts = tmp_path / "contacts.csv"
-    pd.DataFrame({
-        "First Name": ["Giulia", "Rune", "Syed Zeeshan", "Edda", "Katarina", "Nobody"],
-        "Last Name": ["Zampirolo", "Aabenhus", "Ahmad", "Santello", "Dragicevic", "Atall"],
-        "Email": ["g@gmail.com", "r@example.org", "s@gmail.com", "x@alumni.ku.dk",
-                  "KD@bric.ku.dk", "n@x.com"],
-    }).to_csv(contacts, index=False)
+    contacts = tmp_path / "contacts.xlsx"
+    contacts_df.to_excel(contacts, index=False, sheet_name="All Leads")
     out, stats = matching.run(contacts, ku_csv, tmp_path / "matches.xlsx", log=lambda m: None)
-    new = pd.read_excel(out, sheet_name="possible_new_hires", dtype=str)
-    already = pd.read_excel(out, sheet_name="already_ucph_at_signup", dtype=str)
-    assert set(new["db: Last Name"]) == {"Zampirolo", "Aabenhus"}
-    assert set(already["db: Last Name"]) == {"Santello", "Dragicevic"}
-    assert stats["already_at_ucph"] == 2
-    # Names side by side right after the confidence, as they appear in each source.
-    assert list(new.columns[:3]) == ["confidence", "name_in_our_database", "name_at_ucph"]
-    row = new.set_index("name_in_our_database").loc["Rune Aabenhus"]
-    assert row["name_at_ucph"] == "Rune Munck Aabenhus"
+    return out, stats
 
 
-def test_match_names_link_to_a_web_search(tmp_path):
+def sheet_rows(ws):
+    """Data rows of a match sheet as dicts keyed 'UCPH <header>' / 'CRM <header>' / '<header>'."""
+    groups, current = [], ""
+    for c in ws[1]:
+        current = c.value or current
+        groups.append(current)
+    keys = []
+    for g, c in zip(groups, ws[2]):
+        prefix = "UCPH " if g.startswith("UNIVERSITY") else "CRM " if g.startswith("CRM") else ""
+        keys.append(prefix + c.value)
+    rows = []
+    for r in ws.iter_rows(min_row=3, values_only=True):
+        if r[0] is None or not isinstance(r[0], int):
+            break
+        rows.append(dict(zip(keys, r)))
+    return rows
+
+
+HUBSPOT_LIKE = pd.DataFrame({
+    "Record ID": ["11", "12", "13", "14", "15", "16"],
+    "First Name": ["Giulia", "Rune", "Syed Zeeshan", "Edda", "Katarina", "Nobody"],
+    "Last Name": ["Zampirolo", "Aabenhus", "Ahmad", "Santello", "Dragicevic", "Atall"],
+    "Email": ["g@gmail.com", "r@example.org", "s@gmail.com", "x@alumni.ku.dk", "KD@bric.ku.dk", "n@x.com"],
+    "SHD Associated University": ["University of Copenhagen", "University of Oxford", "", "", "", ""],
+    "SHD Academic Position": ["Postdoc", "Professor", "", "", "", ""],
+})
+
+
+def test_match_end_to_end(tmp_path):
     import openpyxl
 
-    test_match_end_to_end(tmp_path)
-    out = tmp_path / "matches.xlsx"
-    ws = openpyxl.load_workbook(out)["possible_new_hires"]
-    headers = [c.value for c in ws[1]]
-    ours, ucph = headers.index("name_in_our_database") + 1, headers.index("name_at_ucph") + 1
-    links = {ws.cell(r, ucph).value: ws.cell(r, ucph).hyperlink.target for r in range(2, ws.max_row + 1)}
-    assert links["Giulia Zampirolo"] == (
-        "https://www.google.com/search?q=%22Giulia+Zampirolo%22+University+of+Copenhagen")
-    assert ws.cell(2, ours).hyperlink.target.startswith("https://www.google.com/search?q=%22")
-    assert ws.freeze_panes == "D2"
-    assert ws.cell(2, 1).fill.fgColor.rgb.endswith("C6EFCE")  # High = green
+    out, stats = run_match(tmp_path, HUBSPOT_LIKE)
+    wb = openpyxl.load_workbook(out)
+    assert wb.sheetnames == ["UCPH vs CRM", "Already at UCPH at signup", "Instructions for Claude",
+                             "Summary", "Method"]
+    new = sheet_rows(wb["UCPH vs CRM"])
+    already = sheet_rows(wb["Already at UCPH at signup"])
+    assert {r["CRM Last name"] for r in new} == {"Zampirolo", "Aabenhus"}  # not Syed *Zeeshan* Ahmad
+    assert {r["CRM Last name"] for r in already} == {"Santello", "Dragicevic"}
+    assert stats["already_at_ucph"] == 2
+    by_name = {r["CRM Last name"]: r for r in new}
+    # The names as each source has them, and the CRM fields that exist in the file.
+    assert (by_name["Aabenhus"]["UCPH First name"], by_name["Aabenhus"]["CRM First name"]) == ("Rune Munck", "Rune")
+    assert by_name["Aabenhus"]["CRM University / Company"] == "University of Oxford"
+    assert by_name["Zampirolo"]["Match type"] == "full name · CRM university = UCPH"
+    assert by_name["Zampirolo"]["CRM Record ID"] == "11"
+    assert "CRM Date added to CRM" not in by_name["Zampirolo"]  # the file has no date column
+    # Left for Claude and for the reviewer.
+    assert all(r["Claude flag"] is None and r["Your verdict"] is None for r in new)
+
+
+def test_match_sheet_layout(tmp_path):
+    import openpyxl
+
+    out, _ = run_match(tmp_path, HUBSPOT_LIKE)
+    wb = openpyxl.load_workbook(out)
+    ws = wb["UCPH vs CRM"]
+    bands = [c.value for c in ws[1] if c.value]
+    assert bands == ["UNIVERSITY OF COPENHAGEN (UCPH) STAFF", "CRM  (All Leads)", "MATCH ASSESSMENT", "YOUR REVIEW"]
+    headers = [c.value for c in ws[2]]
+    assert headers[:3] == ["#", "First name", "Last name"]
+    assert headers[-4:] == ["Claude flag", "Claude note", "Your verdict", "Your comments"]
+    assert ws.freeze_panes == "D3"
+    # Clickable names (web search) and research profile.
+    ucph_last = ws.cell(3, headers.index("Last name") + 1)
+    assert ucph_last.hyperlink.target.startswith("https://www.google.com/search?q=%22")
+    assert "University+of+Copenhagen" in ucph_last.hyperlink.target
+    # Verdict dropdown, and colours that follow what is typed.
+    dv = ws.data_validations.dataValidation[0]
+    assert dv.formula1 == '"YES,MID,NO,Unsure"' and not dv.showErrorMessage
+    assert len(ws.conditional_formatting) == 2
+    # The prompt travels with the file.
+    instructions = "\n".join(str(c.value or "") for c in wb["Instructions for Claude"]["A"])
+    assert matching.CLAUDE_PROMPT.splitlines()[0] in instructions and "claude.ai" in instructions
+
+
+def test_match_without_record_ids_shows_the_row_number(tmp_path):
+    import openpyxl
+
+    out, _ = run_match(tmp_path, HUBSPOT_LIKE.drop(columns=["Record ID"]))
+    rows = sheet_rows(openpyxl.load_workbook(out)["UCPH vs CRM"])
+    assert {r["CRM Last name"]: r["CRM Row in file"] for r in rows} == {"Zampirolo": 2, "Aabenhus": 3}
 
 
 def test_excel_files_are_never_overwritten(tmp_path):
@@ -184,7 +239,10 @@ def test_cli_match_uses_latest_snapshot_by_default(tmp_path):
     contacts.write_text("Name;Email\nGiulia Zampirolo;g@gmail.com\n")
     cli.main(["--dir", str(tmp_path), "match", str(contacts)])
     out = next((tmp_path / "output").glob("matches_contacts_vs_academic_2026-01-01*.xlsx"))
-    assert pd.read_excel(out, sheet_name="possible_new_hires")["name_at_ucph"].tolist() == ["Giulia Zampirolo"]
+    import openpyxl
+    rows = sheet_rows(openpyxl.load_workbook(out)["UCPH vs CRM"])
+    assert [(r["UCPH Last name"], r["CRM First name"], r["CRM Last name"]) for r in rows] == [
+        ("Zampirolo", "Giulia", "Zampirolo")]
 
 
 def test_publish_builds_site_data(tmp_path):

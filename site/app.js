@@ -191,6 +191,7 @@ function setupCompare() {
   for (const ev of ["dragleave", "drop"]) drop.addEventListener(ev, () => drop.classList.remove("over"));
   drop.addEventListener("drop", (e) => { e.preventDefault(); chooseFile(e.dataTransfer.files[0]); });
   $("run").addEventListener("click", runCompare);
+  $("copy-prompt").addEventListener("click", copyPrompt);
   for (const b of document.querySelectorAll(".subtab")) b.addEventListener("click", () => {
     state.view = b.dataset.view;
     for (const o of document.querySelectorAll(".subtab")) o.setAttribute("aria-selected", o === b);
@@ -232,6 +233,7 @@ function runCompare() {
   $("run").disabled = true;
   $("error").hidden = true;
   $("results").hidden = true;
+  $("claude").hidden = true;
   setProgress("Reading your file…");
   state.file.arrayBuffer().then((buffer) => {
     startWorker().postMessage({ cmd: "compare", buffer, filename: state.file.name, dataUrl,
@@ -285,6 +287,7 @@ function showResults(m) {
     b.textContent = `${b.dataset.view === "candidates" ? "Possible new hires" : "Already at UCPH at signup"} (${n})`;
   }
   $("results").hidden = false;
+  setupClaudeStep(m.prompt);
   renderResults();
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -293,19 +296,36 @@ function renderResults() {
   const m = state.results;
   if (!m) return;
   const rows = state.view === "candidates" ? m.candidates : m.already;
+  const full = (r, side) => `${r[`${side}_first_name`]} ${r[`${side}_last_name`]}`.trim();
   const columns = [
     { label: "Confidence", cls: "nowrap", cell: (r) => el("span", { class: `pill ${r.confidence}`, text: r.confidence }) },
-    { label: "Name in our database", cls: "name pair", cell: (r) => link(r.name_in_our_database, r._search_ours) },
-    { label: "Name at UCPH", cls: "name pair", cell: (r) => link(r.name_at_ucph, r._search_ucph) },
+    { label: "Name at UCPH", cls: "name pair", cell: (r) => link(full(r, "ucph"), r.search_ucph) },
+    { label: "Name in our CRM", cls: "name pair", cell: (r) => link(full(r, "crm"), r.search_crm) },
     { label: "Position at UCPH", cell: (r) => r.ucph_title },
     { label: "Department", cell: (r) => r.ucph_department },
-    { label: "Why", cls: "nowrap", cell: (r) => [r.match_type, r.evidence].filter(Boolean).join(" · ") },
-    { label: "Profile", cls: "nowrap", cell: (r) => link(r.ucph_research_profile ? "UCPH page" : "", r.ucph_research_profile) },
-    { label: "Row in file", cls: "nowrap", cell: (r) => r.db_row },
+    { label: "CRM university / company", cell: (r) => r.crm_company || "–" },
+    { label: "Why", cell: (r) => r.already_reason || [r.match_type, r.evidence].filter(Boolean).join(" · ") },
+    { label: "Profile", cls: "nowrap", cell: (r) => link(r.ucph_profile ? "UCPH page" : "", r.ucph_profile) },
   ];
-  if (state.view === "already") columns.splice(1, 0, { label: "Reason", cell: (r) => r.already_at_ucph_reason });
   renderTable($("results-table"), null, columns, rows,
     state.view === "candidates" ? "No possible new hires found." : "Nobody in this group.");
+}
+
+function setupClaudeStep(prompt) {
+  $("prompt").value = prompt;
+  $("claude").hidden = false;
+}
+
+async function copyPrompt() {
+  const text = $("prompt").value;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    $("prompt").select(); // fallback for browsers that block the clipboard API
+    document.execCommand("copy");
+  }
+  $("copied").textContent = "Copied!";
+  setTimeout(() => { $("copied").textContent = ""; }, 2500);
 }
 
 // ---- start --------------------------------------------------------------------------

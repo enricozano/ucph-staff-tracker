@@ -82,6 +82,12 @@ def cmd_import(args):
     print(f"Imported {args.file} as {out}")
 
 
+COLUMN_HELP = {"name": "full name (when there are no separate first/last columns)",
+               "first": "first name", "last": "last name", "company": "company / university",
+               "date": "signup / create date", "record_id": "CRM record ID", "phone": "phone number",
+               "position": "position / job title", "field": "field / job category"}
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="ku-staff", description=DESCRIPTION,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -112,11 +118,9 @@ def build_parser():
                         "(default: academic staff in the latest snapshot)")
     m.add_argument("-o", "--output", type=Path, help="output .xlsx (default: output/matches_...xlsx)")
     m.add_argument("--sheet", help="sheet name in the contacts workbook (default: first sheet)")
-    for role, help_ in (("first", "first name"), ("last", "last name"),
-                        ("name", "full name (when there are no separate first/last columns)"),
-                        ("email", "email"), ("company", "company / institution"),
-                        ("country", "country"), ("date", "signup / create date")):
-        m.add_argument(f"--{role}-col", help=f"column with the {help_} (default: guessed)")
+    for role in matching.COLUMN_GUESSES:  # one option per column role, e.g. --record-id-col
+        m.add_argument(f"--{role.replace('_', '-')}-col", dest=f"{role}_col",
+                       help=f"column with the {COLUMN_HELP.get(role, role)} (default: guessed)")
     m.set_defaults(func=cmd_match)
 
     pub = sub.add_parser("publish", help="build the website's data from the snapshots")

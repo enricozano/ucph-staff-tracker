@@ -13,7 +13,8 @@ import pandas as pd
 import pytest
 
 from ku_staff.publish import publish
-from tests.test_core import snapshot_row, write_snapshot
+from ku_staff import matching
+from tests.test_core import sheet_rows, snapshot_row, write_snapshot
 
 SITE = Path(__file__).resolve().parent.parent / "site"
 pytestmark = pytest.mark.browser
@@ -84,5 +85,9 @@ def test_compare_in_browser(site_url, page, tmp_path):
         page.click("#results-download")
     out = tmp_path / "matches.xlsx"
     d.value.save_as(out)
-    df = pd.read_excel(out, sheet_name="possible_new_hires")
-    assert set(df["name_at_ucph"]) == {"Giulia Zampirolo", "Rune Munck Aabenhus"}
+    import openpyxl
+    rows = sheet_rows(openpyxl.load_workbook(out)["UCPH vs CRM"])
+    assert {(r["UCPH First name"], r["CRM First name"]) for r in rows} == {("Giulia", "Giulia"), ("Rune Munck", "Rune")}
+    # The Claude step: the same prompt as in the file, ready to copy.
+    assert page.is_visible("#claude")
+    assert page.input_value("#prompt") == matching.CLAUDE_PROMPT

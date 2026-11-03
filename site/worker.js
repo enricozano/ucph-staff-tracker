@@ -5,7 +5,7 @@
 //
 // Messages in:  {cmd: "init"} | {cmd: "compare", buffer, filename, dataUrl, includeAffiliated, listName}
 // Messages out: {type: "progress", text} | {type: "ready"}
-//               {type: "result", stats, candidates, already, xlsx} | {type: "error", message, details}
+//               {type: "result", stats, candidates, already, prompt, xlsx} | {type: "error", message, details}
 
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/";
 // Pure-Python wheels shipped with the site (Pyodide doesn't include openpyxl).
@@ -31,9 +31,7 @@ def run(data, filename, staff_json, include_affiliated, list_name, log):
     log("Creating the Excel file…")
     buf = io.BytesIO()
     wb.save(buf)
-    # The page only needs the UCPH side and the names; the full contact rows stay in the Excel.
-    keep = lambda r: {k: v for k, v in r.items() if not k.startswith("db: ")}
-    out = {"stats": stats, "candidates": [keep(r) for r in cand], "already": [keep(r) for r in already]}
+    out = {"stats": stats, "candidates": cand, "already": already, "prompt": matching.CLAUDE_PROMPT}
     return json.dumps(out), buf.getvalue()
 `;
 

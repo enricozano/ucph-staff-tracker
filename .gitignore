@@ -2,8 +2,13 @@
 site/data/
 site/py/
 
-# Contact database exports (CRM data): never commit
+# Contact database exports, match results, templates (CRM data): never commit.
+# In data/ only the public snapshots are tracked.
+data/*
+!data/snapshots/
 hubspot-crm-exports-*
+*.xlsx
+!site/data/files/*.xlsx
 *contacts*.xlsx
 *contacts*.csv
 output/
