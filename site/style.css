@@ -150,6 +150,7 @@ td.nowrap { white-space: nowrap; }
 
 .empty { padding: 24px; border-radius: 10px; background: var(--row-alt); border: 1px dashed var(--border); }
 .empty strong { display: block; font-size: 17px; margin-bottom: 4px; }
+#tab-compare .empty { margin-bottom: 14px; }
 
 .footer { color: var(--muted); font-size: 13px; padding-top: 4px; padding-bottom: 28px; }
 

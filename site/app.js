@@ -137,6 +137,10 @@ async function renderNew() {
 // ---- All academic staff ---------------------------------------------------------
 let allReady = null;
 function showAll() {
+  if (!state.index.latest) {
+    $("all-count").replaceChildren(noDataYet("The list appears after the first download."));
+    return;
+  }
   allReady ||= (async () => {
     const rows = records(await getJSON("data/academic-latest.json"));
     const uniq = (f) => [...new Set(rows.map((r) => r[f]).filter(Boolean))].sort();
@@ -192,7 +196,15 @@ function setupCompare() {
     for (const o of document.querySelectorAll(".subtab")) o.setAttribute("aria-selected", o === b);
     renderResults();
   });
-  if (!state.index.latest) $("run").title = "No staff list has been downloaded yet";
+  if (!state.index.latest) {
+    $("run").title = "No staff list has been downloaded yet";
+    $("drop").before(noDataYet("Comparing becomes available after the first download."));
+  }
+}
+
+function noDataYet(text) {
+  return el("div", { class: "empty" }, el("strong", { text: "No staff list yet" }),
+    `${text} See the Help tab for how to run it.`);
 }
 
 function chooseFile(file) {
