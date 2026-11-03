@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>UCPH Staff Tracker</title>
+  <meta name="description" content="New academic staff at the University of Copenhagen, and which of our contacts now work there.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23901A1E'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='700' font-size='16' text-anchor='middle' fill='white'%3EST%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div>
+        <h1>UCPH Staff Tracker</h1>
+        <p class="tagline">New academic staff at the University of Copenhagen, and which of our contacts now work there.</p>
+      </div>
+      <p class="freshness" id="freshness">Loading…</p>
+    </div>
+    <nav class="wrap tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-tab="new" aria-selected="true">New staff</button>
+      <button class="tab" role="tab" data-tab="all" aria-selected="false">All academic staff</button>
+      <button class="tab" role="tab" data-tab="compare" aria-selected="false">Compare with our contacts</button>
+      <button class="tab" role="tab" data-tab="help" aria-selected="false">Help</button>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <!-- New staff -->
+    <section class="panel" id="tab-new" role="tabpanel">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>New academic staff</h2>
+            <p class="muted">People who appear in the latest download of the UCPH phone book but were not there in an earlier one.</p>
+          </div>
+        </div>
+        <div id="new-empty" class="empty" hidden></div>
+        <div id="new-body" hidden>
+          <div class="controls">
+            <label class="field">Since the download of
+              <select id="new-since"></select>
+            </label>
+            <label class="check"><input type="checkbox" id="new-affiliated"> Include guests, emeriti and teaching assistants</label>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><span class="stat-num" id="new-count">–</span><span class="stat-label" id="new-count-label">new academic staff</span></div>
+            <a class="btn primary" id="new-download" href="#" download>Download Excel</a>
+          </div>
+          <div class="controls">
+            <input type="search" id="new-search" class="search" placeholder="Search name, title, department…" aria-label="Search new staff">
+          </div>
+          <div class="table-wrap"><table id="new-table"></table></div>
+          <button class="btn ghost more" id="new-more" hidden>Show more</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- All academic staff -->
+    <section class="panel" id="tab-all" role="tabpanel" hidden>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>All academic staff</h2>
+            <p class="muted" id="all-sub">Everyone with an academic position at UCPH in the latest download.</p>
+          </div>
+          <div class="btn-group">
+            <a class="btn primary" id="all-download" href="#" download>Download Excel</a>
+            <a class="btn" id="all-download-incl" href="#" download>…incl. guests &amp; emeriti</a>
+          </div>
+        </div>
+        <div class="controls">
+          <input type="search" id="all-search" class="search" placeholder="Search name, title, department…" aria-label="Search staff">
+          <select id="all-faculty" aria-label="Faculty"><option value="">All faculties</option></select>
+          <select id="all-category" aria-label="Position"><option value="">All positions</option></select>
+          <label class="check"><input type="checkbox" id="all-affiliated"> Include guests, emeriti and teaching assistants</label>
+        </div>
+        <p class="muted small" id="all-count"></p>
+        <div class="table-wrap"><table id="all-table"></table></div>
+        <button class="btn ghost more" id="all-more" hidden>Show more</button>
+      </div>
+    </section>
+
+    <!-- Compare -->
+    <section class="panel" id="tab-compare" role="tabpanel" hidden>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>Compare with our contacts</h2>
+            <p class="muted">Find people from our contact database (e.g. a HubSpot export) who now work at UCPH.</p>
+          </div>
+        </div>
+
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".xlsx,.xlsm,.csv">
+          <span class="drop-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 3l5 5h-3v6h-4V8H7l5-5zm-7 14h14v4H5v-4z"/></svg>
+          </span>
+          <span class="drop-title" id="drop-title">Drop the contacts file here, or click to choose it</span>
+          <span class="muted small">Excel (.xlsx) or CSV, with first and last names. Emails, company and country help.</span>
+        </label>
+        <p class="privacy">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V7a5 5 0 00-5-5zm-3 8V7a3 3 0 016 0v3H9z"/></svg>
+          Your file stays on your computer: it is read and compared inside this browser window and never uploaded.
+        </p>
+
+        <fieldset class="options">
+          <legend>Compare with</legend>
+          <label class="radio"><input type="radio" name="against" value="all" checked> All current academic staff</label>
+          <label class="radio" id="against-new-label"><input type="radio" name="against" value="new" id="against-new"> Only new academic staff since
+            <select id="compare-since"></select></label>
+          <label class="check"><input type="checkbox" id="compare-affiliated"> Include guests, emeriti and teaching assistants</label>
+        </fieldset>
+
+        <button class="btn primary big" id="run" disabled>Find matches</button>
+        <div class="progress" id="progress" hidden>
+          <span class="spinner" aria-hidden="true"></span><span id="progress-text">Working…</span>
+        </div>
+        <div class="error" id="error" role="alert" hidden></div>
+      </div>
+
+      <div class="card" id="results" hidden>
+        <div class="card-head">
+          <div>
+            <h2>Results</h2>
+            <p class="muted" id="results-sub"></p>
+          </div>
+          <a class="btn primary" id="results-download" href="#" download>Download Excel</a>
+        </div>
+        <div class="summary">
+          <div class="stat"><span class="stat-num" id="r-contacts">0</span><span class="stat-label">possible new hires</span></div>
+          <div class="stat high"><span class="stat-num" id="r-high">0</span><span class="stat-label">High</span></div>
+          <div class="stat medium"><span class="stat-num" id="r-medium">0</span><span class="stat-label">Medium</span></div>
+          <div class="stat low"><span class="stat-num" id="r-low">0</span><span class="stat-label">Low</span></div>
+          <div class="stat neutral"><span class="stat-num" id="r-already">0</span><span class="stat-label">already at UCPH when they signed up</span></div>
+        </div>
+        <p class="muted small">Click a name to search for that person on the web. The same name doesn't always mean the same person, so check before acting on a match.</p>
+        <div class="subtabs" role="tablist">
+          <button class="subtab" data-view="candidates" aria-selected="true">Possible new hires</button>
+          <button class="subtab" data-view="already" aria-selected="false">Already at UCPH at signup</button>
+        </div>
+        <div class="table-wrap"><table id="results-table"></table></div>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section class="panel" id="tab-help" role="tabpanel" hidden>
+      <div class="card prose">
+        <h2>How it works</h2>
+        <p>The UCPH phone book doesn't say when someone was hired. This site therefore keeps <strong>copies of the phone book taken on different days</strong> ("downloads") and compares them: anyone in the latest download who was not in an earlier one is new.</p>
+
+        <h3>Monthly routine</h3>
+        <ol>
+          <li><strong>Update the data</strong> (needs access to the project on GitHub): open the
+            <a id="actions-link" href="#" target="_blank" rel="noopener">update page</a>, click <em>Run workflow</em>, then the green <em>Run workflow</em> button. After about 15 minutes this site shows the new download.</li>
+          <li><strong>New staff</strong> tab: pick the previous download to see who joined since, and download the Excel file.</li>
+          <li><strong>Compare with our contacts</strong> tab: choose a fresh export of our contacts and compare it with <em>only new academic staff</em> since the previous download.</li>
+        </ol>
+
+        <h3>Reading the comparison</h3>
+        <ul>
+          <li><span class="pill High">High</span> the same full name, and an unusual one: very likely the same person.</li>
+          <li><span class="pill Medium">Medium</span> the same name, but a fairly common one: probably right, check it.</li>
+          <li><span class="pill Low">Low</span> a common name shared by several people, or a slightly different name (e.g. a missing middle name): check carefully.</li>
+          <li><strong>Already at UCPH at signup</strong>: the contact used a UCPH email address (staff or student) in our database, so they were at UCPH before.</li>
+        </ul>
+        <p>In the Excel file the two names are side by side, and clicking either one searches for that person on the web. The <em>method</em> sheet explains every rule.</p>
+
+        <h3>Who counts as academic staff</h3>
+        <p>Professors (incl. clinical and associate/assistant professors), postdocs, PhD students, researchers, research assistants and lecturers. Guests, visiting researchers, emeriti and teaching assistants are included only when you tick the box.</p>
+
+        <h3>Privacy</h3>
+        <p>The staff lists come from the public UCPH phone book; this site publishes only names, job titles, departments and links to UCPH profile pages (no phone numbers, addresses or email addresses). Contact files you compare are processed only in your browser. Treat downloaded files as personal data under the GDPR.</p>
+
+        <p class="muted small" id="version"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer">
+    Data: <a href="https://about.ku.dk/contact/phone-book/" target="_blank" rel="noopener">UCPH phone book</a> ·
+    <a id="repo-link" href="#" target="_blank" rel="noopener">Project on GitHub</a>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

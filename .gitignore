@@ -1,0 +1,21 @@
+# Built by `ku-staff publish` (in GitHub Actions); never commit
+site/data/
+site/py/
+
+# Contact database exports (CRM data): never commit
+hubspot-crm-exports-*
+*contacts*.xlsx
+*contacts*.csv
+output/
+
+# Python
+__pycache__/
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+
+# LibreOffice / Excel lock files
+.~lock.*#
+~$*

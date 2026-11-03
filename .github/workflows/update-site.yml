@@ -1,0 +1,68 @@
+# Updates the website.
+#  - Started by hand (Actions tab -> "Update site" -> Run workflow): downloads a new copy of
+#    the UCPH phone book, saves it in data/snapshots/, rebuilds and publishes the site.
+#  - On every push to main: rebuilds and publishes the site from the saved snapshots.
+# If the download fails (e.g. the UCPH site is down), nothing is saved or published.
+name: Update site
+
+on:
+  workflow_dispatch:
+    inputs:
+      download:
+        description: "Download a new copy of the UCPH staff list (takes about 15 minutes)"
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+
+permissions:
+  contents: write   # commit the new snapshot
+  pages: write      # publish the site
+  id-token: write
+
+concurrency:
+  group: update-site
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install . pytest
+      - name: Tests
+        run: python -m pytest -q -m "not browser"
+
+      - name: Download the UCPH staff list
+        if: github.event_name == 'workflow_dispatch' && inputs.download
+        timeout-minutes: 60
+        run: ku-staff --dir data crawl
+      - name: Save the new snapshot
+        if: github.event_name == 'workflow_dispatch' && inputs.download
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/snapshots
+          git diff --cached --quiet || git commit -m "Add UCPH staff snapshot $(date -u +%F)"
+          git push
+
+      - name: Build the website data
+        run: ku-staff --dir data publish site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ucph-staff-tracker"
+dynamic = ["version"]
+description = "Snapshot the University of Copenhagen phone book, publish new academic staff on a website and match them against a contact database"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.25",
+    "pandas>=1.3",
+    "openpyxl>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "playwright"]
+
+[project.scripts]
+ku-staff = "ku_staff.cli:main"
+
+[tool.setuptools]
+packages = ["ku_staff"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ku_staff.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["browser: drives the website in a real browser (needs playwright, Chrome and internet)"]
