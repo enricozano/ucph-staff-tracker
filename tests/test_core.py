@@ -207,3 +207,11 @@ def test_publish_builds_site_data(tmp_path):
     latest = json.loads((site / "data" / "academic-latest.json").read_text())
     assert "email" not in latest["columns"] and len(latest["rows"]) == 3
     assert (site / "py" / "matching.py").read_text() == Path(matching.__file__).read_text()
+
+
+def test_excel_exports_leave_out_the_email_hash(tmp_path):
+    write_snapshot(tmp_path, "2026-01-01", [snapshot_row("1", "Ann", "A", "Professor", "ann@ku.dk")])
+    xlsx, _ = staff.export(tmp_path)
+    csv, _ = staff.export(tmp_path, xlsx=False)
+    assert "email_sha256" not in pd.read_excel(xlsx).columns
+    assert "email_sha256" in pd.read_csv(csv).columns

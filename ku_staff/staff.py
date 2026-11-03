@@ -43,6 +43,8 @@ SCOPES = {
     "all_staff": "all staff",
 }
 
+# Kept in CSV/JSON (the matcher needs them) but left out of Excel files.
+MACHINE_COLUMNS = ["email_sha256"]
 EXPORT_COLUMNS = ["person_id", "first_name", "last_name", "category", "title_en", "department",
                   "subunit", "faculty", "research_profile", "title_da", "unit_en", "email_sha256"]
 
@@ -149,6 +151,7 @@ def write_table(df, base_path, sheet_name="staff", xlsx=True):
     df.to_csv(csv, index=False)
     if not xlsx:
         return csv
+    df = df.drop(columns=MACHINE_COLUMNS, errors="ignore")  # meaningless to a reader
     xlsx = unique_path(base_path.with_name(base_path.name + ".xlsx"))
     with pd.ExcelWriter(xlsx, engine="openpyxl") as xw:
         df.to_excel(xw, index=False, sheet_name=sheet_name)
